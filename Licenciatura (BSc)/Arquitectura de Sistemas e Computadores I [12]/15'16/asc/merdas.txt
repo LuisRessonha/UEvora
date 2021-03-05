@@ -1,0 +1,10 @@
+little endian   <----
+big endian ---->
+
+
+
+V.F.
+
+exp = 127 + p
+
+(1 + fração) * 2^p

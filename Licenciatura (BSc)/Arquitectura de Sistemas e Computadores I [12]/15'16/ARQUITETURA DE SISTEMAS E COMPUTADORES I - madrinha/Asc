@@ -1,0 +1,523 @@
+## Universidade de Évora
+##
+## Arquitectura de Sistemas e Computadores I
+##
+## Nome: João Ferreira / Nº de aluno: 31498
+## Nome: Filipe Costa / Nº de aluno: 32520
+
+.data
+rgb_file: .asciiz "/home/filipe/Área de Trabalho/Asc/lena512.rgb"
+gray_image: .asciiz "/home/filipe/Área de Trabalho/Asc/Lena512.gray"
+rgb_buffer: .space 786432
+gray_buffer: .space 262144
+sobel_h_buffer: .space 262144
+sobel_v_buffer: .space 262144
+contour_buffer: .space 262144
+sobel_h_matrix: .byte -1,0,1,-2,0,2,-1,0,1
+sobel_v_matrix: .byte -1,-2,-1,0,0,0,1,2,1
+
+.text
+main:
+
+	jal open_rgb_image #Salta para a função open1
+	nop
+	jal read_rgb_image
+	nop
+	jal rgb_to_gray
+	nop
+	jal frame
+	nop
+	jal convolution_h
+	nop
+	jal convolution_v
+	nop
+	jal contour
+	nop
+	jal open_gray_image
+	nop
+	jal write_gray_image
+	nop
+	jal end
+	nop
+	
+#
+open_rgb_image: 
+
+	la $a0, rgb_file # nome do ficheiro a abrir
+	li $a1, 0
+	li $a2, 0
+	li $v0, 13 # system call para abrir o ficheiro
+	syscall # descritor do ficheiro contido em $v0
+	move $a0, $v0 # guardar o descritor do ficheiro
+
+	jr $ra
+	nop
+
+# ler ficheiro
+read_rgb_image:
+	la $a1, rgb_buffer # endereço do buffer para ler
+	li $a2, 786432 # tamanho = número de bytes para ler
+	li $v0, 14 # system call para ler o ficheiro
+	syscall # read
+
+	li $v0, 16
+	syscall
+
+	jr $ra
+	nop
+
+# Funçao que converte uma imagem em formato RGB em ume imagem em formato GRAY.
+rgb_to_gray:
+
+	la $a0, rgb_buffer
+	la $a1, gray_buffer
+	li $t0, 262144
+
+#Função que recebe como argumentos o endereço do buffer da imagem rgb e o buffer da imagem gray. $t0 é um contador auxiliar.
+rgb_to_gray_loop:
+
+	beqz $t0, out #Quando $t0 for igual a 0, salta para a label out
+	nop
+
+	lbu $t1, ($a0) # Faz um load para $t1 do 1º byte da imagem rgb,que corresponde ao byte vermelho
+	mulu $t1, $t1, 30 # Multiplica esse byte por 30
+	divu $t1, $t1, 100 # Divide esse byte por 100
+
+	lbu $t2, 1($a0) # Faz um load para $t1 do 2º byte da imagem rgb,que corresponde ao byte verde
+	mulu $t2, $t2, 59 # Multiplica esse byte por 59
+	divu $t2, $t2, 100 # Divide esse byte por 100
+
+	lbu $t3, 2($a0) # Faz um load para $t1 do 3º byte da imagem rgb,que corresponde ao byte azul
+	mulu $t3, $t3, 11 # Multiplica esse byte por 11
+	divu $t3, $t3, 100 # Divide esse byte por 100
+
+	addu $t4, $t1, $t2 # Soma o byte vermelho com o verde
+	addu $t4, $t4, $t3 #Soma o byte azul com o resultado da soma dos dois anteriores
+	
+	sb $t4, ($a1) # Guarda o valor que se encontra em $t4 no endereço contido em $a1
+
+	addi $a0, $a0, 3 # Incrementa $a0 por 3 para avançar 3 endereços em memoria, ou seja, avançar para os 3 bytes seguintes
+	addi $a1, $a1, 1 # Incrementa $a1 por 1 para avançar 1 endereço em memoria 
+	addi $t0, $t0, -1 # Decrementa $t0 por 1 
+
+	j rgb_to_gray_loop #Salta para a label rgb_to_gray_loop
+	nop
+
+# Função que altera as extremidades da imagem Gray
+frame:
+
+top_line_counter:
+
+	la $a0, gray_buffer
+	li $t0, 512
+
+#Função que recebe como argumento o endereço do buffer da imagem GRAY. $t0 funciona como um contador auxiliar
+top_line_loop:
+
+	beqz $t0, left_column_counter #Quando $t0 for zero, salta para a label left_column_counter
+	nop
+
+	sb $zero, ($a0) # Coloca um zero no endereço de memoria contido em $a0
+
+	addi $a0, $a0, 1 # Incrementa $a0 por 1 para guardar o proximo byte, no proximo endereço
+	addi $t0, $t0, -1 # Decrementa $t0 por 1
+
+	j top_line_loop # Salta para a label top_line_loop
+	nop
+
+left_column_counter:
+
+	la $a0, gray_buffer
+	li $t0, 512
+
+#Função que coloca o primeiro byte de cada linha a 0
+left_column_loop:
+
+	beqz $t0, right_column_counter #Quando $t0 for 0 salta para a label right_column_counter
+	nop
+
+	sb $zero, ($a0) # Guarda um zero no endereço contido em $a0
+
+	addi $a0, $a0, 512 #Incrementa $a0 por 512 para passar para o byte que se encrontra por debaixo
+	addi $t0, $t0, -1 #Decrementa $t0 por 1
+
+	j left_column_loop #Salta para a label left_column_loop
+	nop
+
+right_column_counter:
+ 
+	la $a0, gray_buffer #Carrega o endereço do gray buffer para $a0
+	li $t0, 512 #Coloca $t0 a 512
+
+	addi $a0, $a0, 511 #Salta para o ultimo byte da 1ª linha
+
+#Função que coloca o ultimo byte de cada linha a 0 (preto)
+right_column_loop:
+ 
+	beqz $t0, bottom_line_counter #Quando $t0 for 0 salta para a label bottom_line_counter
+	nop
+
+	sb $zero, ($a0) # Guarda um zero no endereço contido em $a0
+
+	addi $a0, $a0, 512 # Incrementa $a0 por 512
+	addi $t0, $t0, -1 # Decrementa $t0 por 1
+
+	j right_column_loop #Salta para a label right_column_loop
+	nop
+
+bottom_line_counter:
+
+	la $a0, gray_buffer
+	li $t0, 512
+
+	addi $a0, $a0, 261632
+
+#Funçao que coloca a ultima linha da imagem a preto
+bottom_line_loop:
+
+	beqz $t0, out #Quando $t0 for igual a 0 salta para label out
+	nop
+
+	sb $zero, ($a0) #Guarda um zero no endereço contido em $a0
+
+	addi $a0, $a0, 1 # Incrementa $a0 por 1
+	addi $t0, $t0, -1 # Decrementa $t0 por 1
+
+	j bottom_line_loop #Salta para a label bottom_line_loop
+	nop
+
+# Função que 
+convolution_h:
+
+	la $a0, gray_buffer # Carrega o endereço do gray buffer para $a0
+	la $a1, sobel_h_buffer # Carrega o endereço do buffer correspondente ao sobel horizontal para $a1
+	li $t0, 512 # Coloca $t0 a 512
+	li $t1, 510 # Coloca $t0 a 510
+	li $t2, 510 # Coloca $t0 a 510
+	
+
+sobel_h_top_line:
+
+	beqz $t0, sobel_h_middle_lines # Quando $t0 for igual a 0, salta para a label respectiva
+	nop
+
+	lbu $t5,($a0) # Faz um load byte para $t5, do valor contido no endereço $a0 
+	sb $t5, ($a1) # Guarda esse byte no novo buffer
+	 
+	addi $a0, $a0, 1 # Incremente $a0 por 1
+	addi $a1, $a1, 1 # Incremente $a1 por 1
+	addi $t0, $t0, -1 # Decrementa $t0 por 1
+
+	j sobel_h_top_line #Salta para a respectiva label
+	nop
+
+sobel_h_middle_lines:
+
+	li $t0, 512
+
+sobel_h_left_pixel:
+	
+	lbu $t5,($a0)  # Faz um load byte para $t5, do valor contido no endereço $a0
+	sb $t5, ($a1) # Guarda esse byte no novo buffer
+
+	addi $a0, $a0, 1 # Incremente $a0 por 1
+	addi $a1, $a1, 1 # Incremente $a1 por 1
+
+sobel_h_center:
+
+	la $a2, sobel_h_matrix #Carrega para $a2 o endereço da matrix horizontal
+
+	beqz $t1, sobel_h_right_pixel
+	nop
+
+	lb $t3, -513($a0) # Faz um load do byte que se encontra na posiçao (1,1)
+	lb $t4, ($a2) # Carrega o primeiro valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+
+	addi $a2, $a2, 1 # Incrementa $a2 por 1
+
+	lb $t3 , -512($a0) # Faz um load do byte que se encontra na posiçao (1,2)
+	lb $t4, ($a2) # Carrega o segundo valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+
+	addi $a2, $a2, 1 # Incrementa $a2 por 1
+
+	lb $t3, -511($a0) # Faz um load do byte que se encontra na posiçao (1,3)
+	lb $t4, ($a2) # Carrega o terceiro valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+
+	addi $a2, $a2, 1 # Incrementa $a2 por 1
+
+	lb $t3, -1($a0) # Faz um load do byte que se encontra na posiçao (2,1)
+	lb $t4, ($a2) # Carrega o quarto valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+
+	addi $a2, $a2, 1 # Incrementa $a2 por 1
+
+	lb $t3, ($a0) # Faz um load do byte que se encontra na posiçao (2,2)
+	lb $t4, ($a2)  # Carrega o quinto valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+
+	addi $a2, $a2, 1 # Incrementa $a2 por 1
+
+	lb $t3, +1($a0)  # Faz um load do byte que se encontra na posiçao (2,3) 
+	lb $t4, ($a2)  # Carrega o sexto valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+
+	addi $a2, $a2, 1 # Incrementa $a2 por 1
+
+	lb $t3, +511($a0)  # Faz um load do byte que se encontra na posiçao (3,1) 
+	lb $t4, ($a2)  # Carrega o setimo valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+ 
+	addi $a2, $a2, 1 # Incrementa $a2 por 1
+
+	lb $t3, +512($a0) # Faz um load do byte que se encontra na posiçao (3,2) 
+	lb $t4, ($a2)  # Carrega o oitavo valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+
+	addi $a2, $a2, 1 # Incrementa $a2 por 1
+
+	lb $t3, +513($a0) # Faz um load do byte que se encontra na posiçao (3,3) 
+	lb $t4, ($a2)  # Carrega o nono valor da matriz horizontal para $t4
+	madd $t3, $t4 # Multiplica $t3 por $t4 e soma o resultado a lo
+
+	mflo $t5 # Move o valor contido em lo para $t5
+	div $t5, $t5, 4 # Divide $t5 por 4
+	abs $t5, $t5 # Coloca $t5 em valor absoluto
+	sb $t5, ($a1) # Guarda $t5 no endereço contido em $a1
+
+	mult $zero, $zero #Coloca lo a 0
+
+	addi $a0, $a0, 1 # Incrementa $a0 por 1
+	addi $a1, $a1, 1 # Incrementa $a1 por 1
+	addi $t1, $t1, -1 #Decrementa $t1 por 1
+
+	j sobel_h_center # Salta para a respectiva label
+	nop
+
+sobel_h_right_pixel:
+
+	beqz $t2, sobel_h_bottom_line #Quando $t2 é igual a 0, salta para a label respectiva
+	nop
+	
+	lbu $t5,($a0) # Faz um load byte para $t5, do valor contido no endereço $a0 
+	sb $t5, ($a1) # Guarda esse byte no novo buffer
+
+	addi $a0, $a0, 1 # Incrementa $a0 por 1
+	addi $a1, $a1, 1 # Incrementa $a1 por 1
+
+	li $t1, 510 # Coloca $t1 a 510
+
+	addi $t2, $t2, -1 # Decrementa $t2 por 1
+
+	j sobel_h_left_pixel #Salta para a respectiva label
+	nop
+
+sobel_h_bottom_line:
+
+	beqz $t0, out # Quando $t0 for 0, salta para a respectiva label
+	nop
+	
+	lbu $t5,($a0)  # Faz um load byte para $t5, do valor contido no endereço $a0
+	sb $t5, ($a1) # Guarda esse byte no novo buffer
+	
+	addi $a0, $a0, 1 # Incrementa $a0 por 1
+	addi $a1, $a1, 1 # Incrementa $a1 por 1
+	addi $t0, $t0, -1 # Decrementa $t0 por 1
+
+	j sobel_h_bottom_line #Salta para a respectiva label
+	nop
+
+# criar o sobel Vertical
+convolution_v:
+
+	la $a0, gray_buffer # Carrega o endereço do gray buffer para $a0
+	la $a1, sobel_v_buffer # Carrega o endereço do buffer correspondente ao sobel vertical para $a1
+	li $t0, 512 
+	li $t1, 510
+	li $t2, 510
+
+sobel_v_top_line:
+
+	beqz $t0, sobel_v_middle_lines
+	nop
+
+	sb $a0, ($a1)
+	
+	addi $a0, $a0, 1
+	addi $a1, $a1, 1
+	addi $t0, $t0, -1
+
+	j sobel_v_top_line
+	nop
+
+sobel_v_middle_lines:
+
+	li $t0, 512
+
+sobel_v_left_pixel:
+
+	sb $a0, ($a1)
+
+	addi $a0, $a0, 1
+	addi $a1, $a1, 1
+
+sobel_v_center:
+
+	la $a2, sobel_v_matrix
+
+	beqz $t1, sobel_v_right_pixel
+	nop
+
+	lb $t3, -513($a0) # (1,1)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	addi $a2, $a2, 1
+
+	lb $t3 , -512($a0) # (1,2)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	addi $a2, $a2, 1
+
+	lb $t3, -511($a0) # (1,3)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	addi $a2, $a2, 1
+
+	lb $t3, -1($a0) # (2,1)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	addi $a2, $a2, 1
+
+	lb $t3, ($a0) # (2,2)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	addi $a2, $a2, 1
+
+	lb $t3, +1($a0) # (2,3)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	addi $a2, $a2, 1
+
+	lb $t3, +511($a0) # (3,1)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	addi $a2, $a2, 1
+
+	lb $t3, +512($a0) # (3,2)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	addi $a2, $a2, 1
+
+	lb $t3, +513($a0) # (3,3)
+	lb $t4, ($a2)
+	madd $t3, $t4
+
+	mflo $t5
+	div $t5, $t5, 4
+	abs $t5, $t5
+	sb $t5, ($a1)
+
+	mult $zero, $zero
+	addi $a0, $a0, 1
+	addi $a1, $a1, 1
+	addi $t1, $t1, -1
+
+	j sobel_v_center
+	nop
+
+sobel_v_right_pixel:
+
+	beqz $t2, sobel_v_bottom_line
+
+	sb $a0, ($a1)
+
+	addi $a0, $a0, 1
+	addi $a1, $a1, 1
+
+	li $t1, 510
+
+	addi $t2, $t2, -1
+
+	j sobel_v_left_pixel
+	nop
+
+sobel_v_bottom_line:
+
+	beqz $t0, out
+	nop
+
+	sb $a0, ($a1)
+	
+	addi $a0, $a0, 1
+	addi $a1, $a1, 1
+	addi $t0, $t0, -1
+
+	j sobel_v_bottom_line
+	nop
+
+contour:
+	
+	la $a0,sobel_h_buffer
+	la $a1,sobel_v_buffer
+	la $a2,contour_buffer
+	li $t4,255
+	li $t3,262144
+
+contour_loop:
+	beqz $t3, out
+	nop
+	lbu $t0,($a0)
+	lbu $t1,($a1)
+	addu $t0,$t0,$t1
+	divu $t0,$t0,2
+	subu $t0,$t4,$t0
+	
+	sb $t0,($a2)
+	
+	addi $a0,$a0,1
+	addi $a1,$a1,1
+	addi $a2,$a2,1
+	addi $t3,$t3,-1
+	
+	j contour_loop
+	nop
+	
+open_gray_image:
+	la $a0, gray_image
+	li $a1, 1
+	li $a2, 0
+	li $v0, 13 # system call para abrir o ficheiro
+	syscall # descritor do ficheiro contido em $v0
+	move $a0, $v0 # guardar o descritor do ficheiro
+
+	jr $ra
+	nop
+
+# escrever ficheiro
+write_gray_image:
+	la $a1, contour_buffer # endereço do buffer para a escrita
+	li $a2, 262144
+	li $v0, 15 # system call para escrever o ficheiro
+	syscall # escrever
+
+	li $v0, 16
+	syscall
+
+	jr $ra
+	nop
+
+out:
+	jr $ra
+	nop
+
+end:

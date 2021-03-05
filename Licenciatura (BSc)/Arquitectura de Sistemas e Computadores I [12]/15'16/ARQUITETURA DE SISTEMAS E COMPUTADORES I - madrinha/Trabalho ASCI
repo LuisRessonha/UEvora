@@ -1,0 +1,123 @@
+#Trabalho Prática de Arqueitetura de Sistemas e Computadores
+#Licenciatura em Engenharia Informatica
+#Mariana Pedrosa-32490
+#Raquel Gomes-31523
+#2013/2014
+		.data
+nome:		.asciiz "add.rgb"	#Local e nome onde se encontra a imagem a modificar
+nomecriado:	.asciiz "add.gray"	#Nome do ficheiro que vai ser criado apos ser convertido a preto e branco
+cor:		.space 768
+pretobranco:	.space 256
+		.text
+Main:
+	la $a0, nome		#
+	jal openfich		#Chamada da funcao para abrir o ficheiro da imagem em rgb
+	nop
+	move $a0, $v0		#
+	li $a2, 768
+	la $a1, cor
+	jal read_rgb_image
+	nop
+	la $a0, nomecriado
+	la $a1, pretobranco
+	li $a2, 256
+	jal write_gray_image
+	nop
+	jal end
+	nop
+	
+	
+#Funcao para brir o ficheiro para leitura	
+openfich:	addi $sp,$sp-4	
+		sw $ra,0($sp)	
+	
+		li $a1,0	
+		li $a2,0	
+		li $v0,13 	
+		syscall		
+	
+		lw $ra,0($sp)  
+		addi $sp,$sp,4	
+	
+		jr $ra		
+		nop	
+	
+#Funcao para ler a imagem no formato rgb	
+read_rgb_image:
+	li $v0, 14
+	syscall
+	li $v0, 16
+	jr $ra			#Volta para a funcao main
+	nop
+
+
+#Funcao para escrever e criar a nova imagem a preto e branco
+write_gray_image:
+	move $t0, $a1
+	move $t1, $a2
+	li $a1, 1
+	li $a2, 0
+	li $v0, 13
+	syscall
+	move $a0, $v0
+	move $a1, $t0
+	move $a2, $t1
+	li $v0, 15
+	syscall
+	
+	jr $ra		#Volta para a funcao main
+	nop
+
+
+
+#Funcao para converter os pixels da imagem de cor para preto e branco
+rgb_to_gray:
+	la $t0, cor
+	move $t5, $a2
+L:	beqz $t5, ACABA
+	nop
+	
+	lbu $t1, ($t0)
+	lbu $t2, 1($t0)
+	lbu $t3, 2($t0)
+	
+	#I = 0:30R + 0:59G + 0:11B
+	#Formula para obter cada pixel da imagem em tons de cinzento correspondente ao pixel da imagem RGB.
+	mul $t1, $t1, 30		#multiplica por 30 o pixel referente a cor vermelha e guarda o valor em t1
+	div $t1, $t1, 100		#divide por 100 para corresponder aos 0.30
+	
+	mul $t2, $t2, 59		#multiplica por 59 o pixel referente a cor verde e guarda o valor em t2
+	div $t2, $t2, 100		#divide por 100 para corresponder aos 0.59
+	
+	mul $t3, $t3, 11		#multiplica por 11 o pixel referente a cor azul e guarda o valor em t3
+	div $t3, $t3, 100		#divide por 100 para corresponder aos 0.11
+	
+	#Soma da codificação de cada cor para cada pixel 
+	add $t4, $t1, $t2		#Guarda no t4 a soma dos valores das conversoes R e G 
+	add  $t4, $t4, $t3		#Adiciona em t4, o valor da soma obtida anteriormente juntamente com o pixel B
+	
+	sb $t4, ($a1)
+	addi $t0, $t0, 3
+	addi $a1, $a1, 1
+	addi $t5, $t5, -1
+	j L
+	nop
+	
+ACABA:
+	li $v0, 15
+	syscall
+	jr $ra
+	nop
+	
+
+#
+convolution:
+
+
+
+#
+contour:
+
+
+
+end:

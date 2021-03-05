@@ -1,0 +1,24 @@
+#aula3
+#1a)
+IF:
+	beq  $t0, $t1, ELSE
+	nop
+	add $t0, $zero, $zero
+	
+ELSE:
+	add $t0, $zero, $t1
+	
+#1b)
+IF:
+	bne $t0, $zero, ELSE
+	nop
+	sub $t1, $zero, $t0 
+
+ELSE:
+	add $t1, $t0, $zero
+
+#1c)
+	add $t1, $zero, $zero
+FOR:
+	
+#2b)

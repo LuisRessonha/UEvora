@@ -1,0 +1,166 @@
+#Trabalho Pratico de Arquitetura de Sistemas e Computadores
+#Licenciatura em Engenharia Informatica
+#Mariana Pedrosa-32490
+#Raquel Gomes-31523
+#2013/2014
+		.data
+nome:		.asciiz "lenacolor.rgb"			#Local e nome onde se encontra a imagem a modificar
+nomecriado:	.asciiz "lenapretoebranco.gray"		#Nome do ficheiro que vai ser criado apos ser convertido a preto e branco
+cor:		.space 768				#Buffer da imagem a cores
+pretobranco:	.space 256				#Buffer da imagem a preto e branco
+Sh:		.byte 1,0,-1,2,0,-2,1,0,-1		#Buffer da matriz Sh (A)
+Sv:		.byte 1,2,1,0,0,0,-1,-2,-1		#Buffer da matriz Sv (B)
+		.text
+		
+
+
+#Funcao main	
+Main:
+	la $a0, nome			#Faz load do adereco onde esta a imagem a cores rgb
+	jal openfich			#Chama a funcao para abrir o ficheiro para leitura
+	nop
+	move $a0, $v0		
+	li $a2, 768			#a2=Numero de bytes para leitura
+	la $a1, cor			#Faz o load em a1 do adereco do buffer correspondente a imagem a cores
+	jal read_rgb_image		#Chama a funcao que vai ler a imagem no formato rgb para um array em memoria
+	nop
+	la $a0, nomecriado		#Passa para o endereço a0 o adresso da imagem que se vai escrever
+	la $a1, pretobranco		#Faz o load em a1 do adereco do buffer correspondente a imagem a preto e branco 
+	li $a2, 256			#a2=Numero de bytes para leitura
+	jal write_gray_image		#Chama a funcao que vai escrever uma imagem em formato GRAY num ficheiro
+	nop
+	la $a0, Sh
+	la $a1,
+	la $a2, Sv
+	jal convolution
+	nop
+	jal end				#Chama a funcao end
+	nop
+	
+	
+	
+#Funcao para abrir o ficheiro para leitura	
+openfich:	
+
+		addi $sp,$sp-4		#Incrementa espaço na pilha
+		sw $ra,0($sp)		#Guarda na pilha o valor do registo ra	
+	
+		li $a1,0	
+		li $a2,0	
+		li $v0,13 	
+		syscall			#Syscall para abrir a imagem a cores em rgb
+	
+		lw $ra,0($sp) 		#Faz o load do valor do registo ra guardado anteriormente na pilha
+		addi $sp,$sp,4		#Liberta espaco na pilha
+	
+		jr $ra			#Retorna para a funcao main	
+		nop	
+
+	
+			
+#Funcao que le uma imagem no formato RGB para um array em memoria
+#A funcao recebe como argumentos uma string com o nome do cheiro a ler e devolve um buffer com a imagem RGB lida
+#A funcao assume dimensao 512 x512.	
+read_rgb_image:
+
+	li $v0, 14
+	syscall			#Syscall para ler a imagem a cores em rgb
+	li $v0, 16
+	jr $ra			#Volta para a funcao main
+	nop
+
+
+
+
+#Funcao que escreve uma imagem em formato GRAY num ficheiro
+#A funcao recebe como argumentos o nome de um ficheiro, um buffer com a imagem e o comprimento do buffer
+write_gray_image:
+
+	move $t0, $a1
+	move $t1, $a2
+	li $a1, 1
+	li $a2, 0
+	li $v0, 13
+	syscall
+	move $a0, $v0
+	move $a1, $t0
+	move $a2, $t1
+	li $v0, 15
+	syscall
+	
+	jr $ra			#Volta para a funcao main
+	nop
+
+
+
+
+#Funcao que converte uma imagem a cores RGB para uma imagem em tons de cinzento GRAY
+#A funcao recebe como argumentos um buffer com a imagem RGB e um buffer onde deve ser colocada a imagem em formato Gray
+#A funcao assume internamente que a iamgem tem dimensao 512x512
+rgb_to_gray:
+
+	la $t0, cor
+	move $t5, $a2
+L:	beqz $t5, ACABA
+	nop
+	
+	lbu $t1, ($t0)			#Load do primeiro byte para o registo t1
+	lbu $t2, 1($t0)			#Load do segundo byte para o registo t2
+	lbu $t3, 2($t0)			#Load do terceiro byte para o registo t3
+	
+	#I = 0:30R + 0:59G + 0:11B
+	#Formula para obter cada pixel da imagem em tons de cinzento correspondente ao da imagem em RGB.
+	mul $t1, $t1, 30		#multiplica por 30 o pixel referente a cor vermelha e guarda o valor em t1
+	div $t1, $t1, 100		#divide por 100 para corresponder aos 0.30
+	
+	mul $t2, $t2, 59		#multiplica por 59 o pixel referente a cor verde e guarda o valor em t2
+	div $t2, $t2, 100		#divide por 100 para corresponder aos 0.59
+	
+	mul $t3, $t3, 11		#multiplica por 11 o pixel referente a cor azul e guarda o valor em t3
+	div $t3, $t3, 100		#divide por 100 para corresponder aos 0.11
+	
+	#Soma da codificacao de cada cor para cada pixel 
+	add $t4, $t1, $t2		#Guarda no t4 a soma dos valores das conversoes R e G 
+	add  $t4, $t4, $t3		#Adiciona em t4, o valor da soma obtida anteriormente juntamente com o pixel B
+	
+	sb $t4, ($a1)		
+	
+	addi $t0, $t0, 3
+	addi $a1, $a1, 1
+	addi $t5, $t5, -1
+	j L
+	nop
+	
+ACABA:
+	li $v0, 15
+	syscall			#Syscall para criar o ficheiro a preto e branco em formato rgb
+	jr $ra			#Volta para o local onde foi chamada
+	nop
+	
+
+
+#Funcao que calcula a convolucao de uma imagem A com um operador Sobel (matriz 3x3) e coloca o resultado numa matriz B
+#Os valores da matriz B devem estar em valor absoluto
+#A funcao recebe como argumentos um buffer com a matriz A, um buffer com um dos operadores Sobel e um  buffer que vai converter a imagem filtrada B
+#A funcao assume internamente que a imagem tem dimenssao 512 x512.
+
+convolution_horizontal:
+
+	la $a0, Sh
+	
+	
+
+
+convulution_vertical:
+	
+	la $a3, Sv
+
+
+
+contour:
+
+
+
+end:
+	jr $ra
+	nop
