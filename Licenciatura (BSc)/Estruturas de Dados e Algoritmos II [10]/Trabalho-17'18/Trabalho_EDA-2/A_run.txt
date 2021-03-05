@@ -1,0 +1,12 @@
+rm users.dat hashtable.dat files_IO/teste
+gcc -Wall postas.c new_ht.c user.c seguidos.c -g -o files_IO/teste
+time ./files_IO/teste <files_IO/input.in >files_IO/output.out
+
+
+
+
+rm users.dat hashtable.dat files_IO/teste
+gcc -Wall postas.c new_ht.c user.c seguidos.c -g -o files_IO/teste
+time ./files_IO/teste <files_IO/i1.in >files_IO/output.out
+time ./files_IO/teste <files_IO/i2.in >files_IO/output.out
+time ./files_IO/teste <files_IO/i3.in >files_IO/output.out

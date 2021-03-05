@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "trie.h": "c",
+        "string.h": "c",
+        "stdbool.h": "c",
+        "stdio.h": "c",
+        "user.h": "c",
+        "seguidores.h": "c",
+        "stdlib.h": "c"
+    }
+}

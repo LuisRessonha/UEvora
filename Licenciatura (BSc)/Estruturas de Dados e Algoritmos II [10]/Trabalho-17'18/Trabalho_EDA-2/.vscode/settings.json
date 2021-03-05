@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "new_ht.h": "c",
+        "stdbool.h": "c"
+    }
+}
