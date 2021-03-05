@@ -1,0 +1,48 @@
+TAMANHO DO FICHEIRO 1000000
+
+    unknown -> [9.9%, 10,01%] 
+    broken- -> [20.95%, 21.05%]
+    off---- -> [13.95%, 14.05%]
+    on----- -> [54.93%, 55.05%]
+
+ENTROPIA = 1,67 bits
+
+
+O BIT ALTERADO CORRESPONDE AO ÚLTIMO DOS 7 BITS.
+
+0------(1-pe)------->0
+                    >
+                -
+          pe -
+       -
+    -
+-
+1------(1-pe)------->1
+
+CANAL BINÁRIO SIMÉTRICO (falta no desenho poder ir de 0 para 1)
+
+/*
+Como o canal só irá trocar, no máximo, o último bit de cada letra e cada char tem 8 bits
+então a pe = 0.125 e (1-pe) = 0.857
+*/
+
+
+Fonte com 100 mensagens tinha 35 erros. Cada char tem 8 bits e cada mensagem tem 8 chars.
+8*8*100 = 6400.
+pe = 35/6400 = 0.00546875
+(1-pe) = 0.99453125
+
+
+MATRIZ DE TRANSICAO DO CANAL
+
+/*
+
+        0         1
+  0  [0.857    0.143]
+  1  [0.143    0.857]
+
+*/
+
+        0         1
+  0  [0.0055    0.9945]
+  1  [0.9945    0.0055]
