@@ -1,0 +1,173 @@
+/* Álgebra Relacional
+Selecciona (select): σ
+Projecta (project): Π
+*/
+
+
+
+5.
+(a) -- Matriculas dos taxis Mercedes --
+	
+-- Expressão em SQL 
+	select Matricula
+	from taxi  natural inner join modelo
+	where modelo.Marca = 'Mercedes';
+
+-- Expressão em Álgebra Relacional
+	Proj taxi.Matricula (Sel modelo.Marca = 'Mercedes' (taxi |x| modelo))
+ 
+ 
+ -----------------------------------------------------------------------------
+
+ 
+(b) -- Motoristas que já fizeram um turno num taxi Mercedes --
+
+-- Expressão em SQL 
+	select distinct Nome
+	from motorista natural inner join turno natural inner join taxi natural inner join modelo
+	where modelo.Marca = 'Mercedes';
+
+-- Expressão em Álgebra Relacional
+	Proj(motorista.nome)(Sel(Marca = "Mercedes")(motorista |x| turno |x| taxi |x| modelo))
+	
+	
+-----------------------------------------------------------------------------
+
+
+(c) -- Telefones dos Motoristas que já fizeram um serviço para o Cliente com o Nif 600700800900 --
+
+-- Expressão em SQL
+	select distinct telefone
+	from motorista natural inner join telefone natural inner join turno, pedido natural inner join cliente natural inner join servico
+	where Nif = '600700800900' and turno.Matricula = servico.Matricula and pedido.matricula = servico.matricula
+
+-- Expressão em Álgebra Relacional
+	Proj(motorista.telefone)(Sel(motorista.Nbi = telefone.Nbi = turno.Nbi and pedido.Nif = cliente.Nif and Nif = '600700800900', turno.Matricula = serviço.Matricula = taxi.matricula)(motorista |x| turno |x| taxi |x| cliente |x| pedido |x| serviço |x| telefone))
+
+
+
+-----------------------------------------------------------------------------
+
+
+(d) --  Taxis que já foram conduzidos pelo ’Anibal Silva’ --
+
+-- Expressão em SQL
+	Select distinct turno.matricula
+	from turno natural inner join motorista
+	where motorista.nome = 'Anibal Silva';
+
+-- Expressão em Álgebra Relacional
+	Proj(motorista.telefone)(Sel(motorista.Nome = "Anibal Silva" and turno.Nbi = motorista.Nbi and turno.Matricula = taxi.Matricula = serviço.Matricula)(motorista |x| turno |x| taxi |x| serviço))
+
+	
+-----------------------------------------------------------------------------
+
+
+(e)
+
+-- Expressão em SQL
+	select motorista.Nome
+	from motorista
+	except
+	select distinct motorista.nome
+	from motorista, pedido, cliente ,servico, turno
+	where pedido.Nif = cliente.Nif and cliente.Nome = 'José Silva' and pedido.matricula = servico.matricula and servico.matricula = turno.matricula and turno.nbi = motorista.nbi
+
+-- Expressão em Álgebra Relacional
+	Proj(motorista.nome)(Sel(Nome)(motorista))
+	/
+	Proj(motorista.nome)(Sel(pedido.Nif = cliente.Nif and cliente.Nome = "José Silva" and pedido.matricula = serviço.matricula)(motorista |x| turno |x| pedido |x| serviço |x| cliente))
+
+	
+-----------------------------------------------------------------------------
+
+
+(f)
+
+-- Expressão em SQL
+	(select distinct Nome
+	from motorista)
+	except
+	(select distinct Nome
+	from motorista inner join  taxi natural inner join modelo
+	where taxi.modelo = modelo.Modelo and modelo.Marca = 'Mercedes')
+
+-- Expressão em Álgebra Relacional
+	Proj(motorista.nome)(Sel(Nome)(motorista))
+	/
+	Proj(motorista.nome)(Sel(taxi.modelo = modelo.Modelo and modelo.Marca = "Mercedes")(motorista |x| taxi |x|modelo))
+
+	
+-----------------------------------------------------------------------------
+
+
+(g)***
+
+-- Expressão em SQL
+	select distinct M.Nome
+	from motorista as M
+	where not exists(
+				(select taxi.matricula
+				from taxi
+				except
+				(select servico
+				from servico natural inner join taxi
+				where M.nome = motorista.nome
+	
+-- Expressão em Álgebra Relacional
+	Proj(motorista.nome)(Sel(Nome)(motorista))
+	/
+	Proj(motorista.nome)(Sel(matricula)(motorista |x| taxi))
+
+	
+-----------------------------------------------------------------------------
+
+
+(h)***
+
+-- Expressão em SQL
+	select motorista.nome, count(servico)
+	from motorista natural inner join turno, servico
+	where turno.datainicio <= servico.datainicio and 
+			turno.datafim>= servico.datainicio and 
+			turno.matricula = servico.matricula
+	group by motorista.nome;
+
+
+-- Expressão em Álgebra Relacional
+	Proj(motorista.nome)(g count(serviço)(Sel(serviço.DataInicio = turno.DataInicio and serviço.DataFim = turno.DataFim and serviço.Matricula = turno.Matricula)(turno |x| serviço |x| motorista)))
+
+	
+-----------------------------------------------------------------------------
+
+	 
+(i)
+
+	select motorista.nome, sum(servico.valor)
+	from motorista natural inner join turno, servico
+		where turno.datainicio <= servico.datainicio and 
+			turno.datafim>= servico.datainicio and 
+			turno.matricula = servico.matricula
+	group by motorista.nome;
+
+
+
+(j)
+	
+	select nome from(
+		select distinct motorista.nome, sum(servico.valor) as lucro
+		from motorista, servico, turno
+		where turno.matricula = servico.matricula and turno.nbi = motorista.nbi
+		group by motorista.nome) as n;
+
+
+(k)
+
+
+
+
+
+
+(l)
+	select avg(datainicio-datapedido)
+	from pedido;

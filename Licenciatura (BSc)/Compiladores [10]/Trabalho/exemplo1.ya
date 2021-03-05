@@ -1,0 +1,10 @@
+a : int = 0;
+b : string = "ola";
+
+main () : void {
+  a : bool = true;
+
+  if a then {
+    b = "hello, world";
+  };
+};
