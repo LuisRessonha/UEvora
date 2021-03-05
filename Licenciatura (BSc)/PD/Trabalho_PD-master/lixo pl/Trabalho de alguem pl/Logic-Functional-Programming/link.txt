@@ -1,0 +1,1 @@
+https://github.com/Sleepy-Coders/Logic-Functional-Programming/tree/master/Prolog/featsOfStrength/nonogram
