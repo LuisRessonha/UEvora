@@ -1,0 +1,107 @@
+Trabalho SO:
+
+=========================Pseudocodigo=======================
+
+CONCEITOS:
+PROCESSO/PROGRAMA : ficheiro, cada ficheiro e um processo, são guardados no Program_Lib
+Instrução: vai ser uma unidade dentro do processo com codigo int (1:Run 2:disk 3 ....)
+
+
+
+// Função principal: funcionamento do scheduler;
+// Q=quantum do RUN global
+// QB= Quantum do BLOCKED global
+// RUN= variavel que tem o indice do processo que esta a guardado no Program_lib[RUN]
+// Program_lib array onde estão guardados todos os programas
+// nprog = numero de processos /programas no program_lib
+// Ready= lista onde estão guardadas os indices dos processos em ready
+// Blocked=lista onde estão guardadas os indices dos processos  Block
+// instante= contador do numero de ciclos que este programa ja fez
+
+ 
+
+
+STRUCT PROG{
+pc= indice da data
+data= onde estão as instruçoes
+state = estado atual
+gtbcount= contador do go to begin (quando ciclo iniciado começa a 10 e vai decrescendo)
+indice = indentificador do progama no Program_lib
+}
+
+=============================================================
+CICLO:
+
+
+######RUN->READY#####
+if Q!=0
+
+	Run(RUN);
+	Q--;
+
+else
+	if (program_lib[RUN].data[pc-1]!=2 && program_lib[RUN].data[pc-1]!=0){
+		program_lib[RUN].state="READY";
+		Ready.insert(RUN) // programa que estava a correr vai para a lista do Ready	
+
+	elseif (program_lib[RUN].data[pc-1]!=0) {
+		program_lib[RUN].state="BLOCK";
+		BLOCK.insert(RUN)
+
+	else 
+		program_lib[RUN].state="EXIT";
+
+	RUN=Ready.pop(); //  falta teste
+		// retira novo progrma do READY para o RUN;
+	Q=3
+
+#####BLOCKED->READY####(DONE)
+
+if !BQ.Empty()
+	if QB != 0
+		QB--
+	else
+		int aux= blocked.pop();
+		Program_lib[aux]="READY";
+		Ready.insert(aux);
+		QB=3;
+
+####### NEW->READY ######## DONE
+
+If NEW !=NILL// caso NEW seja lista : while !NEw.empty()
+	if Ready.size<4
+		Ready.insert(NEW)
+		Program_lib[NEW].state="Ready";
+		NEW=NILL;
+	else 
+		//nao se sabe se vai para block ou se fica em NEW 
+		// caso fique em NEW, o NEW Sera uma lista e nao uma variavel
+
+####### CONSOLA->NEW #### DONE( nao esta em ciclo)
+
+scanf(%s, filename);
+while filepointer != NULL 
+	filepointer= fopen(filename);
+
+	if filepointer!=NULL
+	 	Program_lib[nprog]=pcb_create(filepointer,  nprog) // devolve um var prog descompactado do ficheiro
+	 	NEW= nprog;
+		\\ new.insert(nprog) caso new seja uma lista e nao uma var comum
+	 	nprog++
+
+	scanf(%s, filename)
+
+############CICLE ENDING####
+int i =0;
+string="%d | ", ciclo;
+for i<nprog i++
+	string =string + " %s |",program.lib[i].state;
+fwrite(string);
+wait (2s)
+instante++
+	
+
+
+
+
+
